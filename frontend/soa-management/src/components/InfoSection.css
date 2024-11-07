@@ -1,0 +1,47 @@
+/* InfoSection.css */
+.info-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 50px;
+   /* background-color: #f7e9da;  Correspond à la couleur de fond */
+    height: 100vh; /* S'adapte à la hauteur de l'écran */
+    padding-bottom: 150px;
+  }
+  
+  .info-text {
+    flex: 1;
+    max-width: 50%;
+    padding-left: 50px;
+  }
+  
+  .info-title {
+    font-size: 5rem;
+    color: #FFF;
+    font-family: 'Poppins', sans-serif;
+    margin-bottom: 20px;
+  }
+  
+  .info-description {
+    font-size: 5rem;
+    color: #FFF;
+    line-height: 1.6;
+    font-family: 'Poppins', sans-serif;
+  }
+  
+  .info-image {
+    flex: 1;
+    display: flex;
+    justify-content: flex-end;
+    padding-right: 35px;
+    padding-top: 20px;
+    
+  }
+  
+  .info-image img {
+    max-width: 55%;
+    height: auto;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  }
+  
