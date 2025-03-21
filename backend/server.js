@@ -1,7 +1,6 @@
-// server.js
 const express = require('express');
 const cors = require('cors');
-const db = require('./db'); // importez sequelize ici
+const db = require('./db'); 
 const http = require('http');
 const { Server } = require('socket.io');
 const multer = require('multer');
@@ -9,6 +8,7 @@ const path = require('path');
 const Operation = require('./models/Operation'); 
 const Soa = require('./models/Soa'); 
 const SuiviBail = require('./models/SuiviBail');
+const File = require('./models/File');
 const fs = require('fs'); 
 
 const app = express();
@@ -23,21 +23,19 @@ const io = new Server(server, {
   }
 });
 
-// Configuration de multer pour stocker les fichiers
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/'); // Assurez-vous que ce dossier existe
+    cb(null, 'uploads/'); 
   },
   filename: (req, file, cb) => {
     cb(null, `${Date.now()}-${file.originalname}`);
   },
 });
 
-// Filtrer les fichiers PDF et images (JPEG, PNG)
 const fileFilter = (req, file, cb) => {
   const allowedMimeTypes = ['application/pdf', 'image/jpeg', 'image/png'];
   if (allowedMimeTypes.includes(file.mimetype)) {
-    cb(null, true); // Accepter le fichier
+    cb(null, true); 
   } else {
     cb(new Error('Seuls les fichiers PDF, JPEG et PNG sont autorisés'), false);
   }
@@ -47,7 +45,6 @@ const upload = multer({ storage, fileFilter });
 
 module.exports = upload;
 
-// Route pour enregistrer les opérations d'un SOA avec possibilité de télécharger un PDF si devis est coché
 app.post('/api/operations', upload.single('devis_pdf'), async (req, res) => {
   const {
     soa_id,
@@ -67,7 +64,6 @@ app.post('/api/operations', upload.single('devis_pdf'), async (req, res) => {
   }
 
   try {
-    // Convertir les champs booléens en valeurs numériques 1 ou 0
     const operationData = {
       soa_id,
       annee,
@@ -81,7 +77,6 @@ app.post('/api/operations', upload.single('devis_pdf'), async (req, res) => {
       devis_pdf: devis && req.file ? req.file.filename : null
     };
 
-    // Créer l'enregistrement de l'opération
     const operation = await Operation.create(operationData);
 
     emitDataUpdate();
@@ -96,19 +91,16 @@ app.post('/api/operations', upload.single('devis_pdf'), async (req, res) => {
   }
 });
 
-// Route pour servir les fichiers PDF
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Route pour uploader une photo pour un SOA spécifique
 app.post('/api/soa/:id/photo', upload.single('photo'), async (req, res) => {
   const { id } = req.params;
 
-  // Vérifiez si le fichier a été uploadé
   if (!req.file) {
     return res.status(400).json({ message: 'Aucun photo n\'a été uploadé.' });
   }
 
-  const photoPath = req.file.filename; // Chemin du fichier uploadé
+  const photoPath = req.file.filename; 
 
   try {
     const soa = await Soa.findByPk(id);
@@ -116,7 +108,6 @@ app.post('/api/soa/:id/photo', upload.single('photo'), async (req, res) => {
       return res.status(404).json({ message: 'SOA non trouvé' });
     }
 
-    // Mise à jour du champ photo
     soa.photo = photoPath;
     await soa.save();
 
@@ -127,10 +118,8 @@ app.post('/api/soa/:id/photo', upload.single('photo'), async (req, res) => {
   }
 });
 
-// Route pour servir les fichiers statiques (photos)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Émettre un événement à tous les clients lorsqu'une modification est effectuée
 const emitDataUpdate = () => {
   db.query('SELECT * FROM soa', (err, results) => {
     if (!err) {
@@ -139,7 +128,6 @@ const emitDataUpdate = () => {
   });
 };
 
-// WebSocket pour la connexion des clients
 io.on('connection', (socket) => {
   console.log('Un client s\'est connecté');
 
@@ -148,9 +136,8 @@ io.on('connection', (socket) => {
   });
 });
 
-// Route pour obtenir les SOA par commune_id
 app.get('/api/soa', async (req, res) => {
-  const commune_id = parseInt(req.query.commune_id, 10); // Convertir en entier
+  const commune_id = parseInt(req.query.commune_id, 10);
 
   if (isNaN(commune_id)) {
     return res.status(400).json({ error: 'commune_id doit être un nombre valide' });
@@ -165,8 +152,6 @@ app.get('/api/soa', async (req, res) => {
   }
 });
 
-
-// Route pour modifier un SOA
 app.put('/api/soa/:id', async (req, res) => {
   const { nom } = req.body;
   const { id } = req.params;
@@ -185,23 +170,20 @@ app.put('/api/soa/:id', async (req, res) => {
   }
 });
 
-// Route pour supprimer un SOA avec ses opérations associées
 app.delete('/api/soa/:id', async (req, res) => {
   const { id } = req.params;
 
   try {
-    // Supprimer toutes les opérations associées au SOA
     await Operation.destroy({
       where: { soa_id: id }
     });
 
-    // Ensuite, supprimer le SOA
     const soa = await Soa.destroy({
       where: { id: id }
     });
 
     if (soa) {
-      emitDataUpdate(); // Si vous utilisez des websockets ou un système de notification
+      emitDataUpdate();
       return res.status(200).json({ message: 'SOA et opérations supprimés avec succès' });
     } else {
       return res.status(404).json({ error: 'SOA non trouvé' });
@@ -212,7 +194,6 @@ app.delete('/api/soa/:id', async (req, res) => {
   }
 });
 
-// Route pour ajouter un SOA
 app.post('/api/soa', async (req, res) => {
   const { nom, commune_id } = req.body;
   if (!nom || !commune_id) {
@@ -228,7 +209,6 @@ app.post('/api/soa', async (req, res) => {
   }
 });
 
-// Route pour afficher les opérations
 app.get('/api/operations', async (req, res) => {
   const { annee } = req.query;
 
@@ -241,13 +221,12 @@ app.get('/api/operations', async (req, res) => {
       where: { annee },
       include: [
         {
-          model: Soa, // Inclure les informations du SOA associé
-          attributes: ['nom', 'commune_id'] // Sélectionner les colonnes du SOA à inclure
+          model: Soa,
+          attributes: ['nom', 'commune_id']
         }
       ]
     });
 
-    // Transformer le résultat pour inclure les noms et autres informations du SOA
     const formattedOperations = operations.map(operation => ({
       id: operation.id,
       soa_id: operation.soa_id,
@@ -259,8 +238,8 @@ app.get('/api/operations', async (req, res) => {
       devis: operation.devis,
       quitus: operation.quitus,
       etatdeslieux: operation.etatdeslieux,
-      soa_nom: operation.Soa.nom, // Inclure le nom du SOA
-      commune_id: operation.Soa.commune_id // Inclure la commune associée
+      soa_nom: operation.Soa.nom,
+      commune_id: operation.Soa.commune_id
     }));
 
     if (formattedOperations.length === 0) {
@@ -274,31 +253,27 @@ app.get('/api/operations', async (req, res) => {
   }
 });
 
-// Ajout bail
 app.post('/api/suivi_bail', upload.single('scan'), async (req, res) => {
   const { entite, type_de_bail, beneficiaire, district, duree, date_d_effet } = req.body;
 
-  // Vérifiez que tous les champs requis sont présents
   if (!entite || !type_de_bail || !beneficiaire || !district || !duree || !date_d_effet || !req.file) {
     return res.status(400).json({ error: 'Tous les champs sont requis' });
   }
 
   try {
-    // Convertir date_d_effet en objet Date
     const dateEffet = new Date(date_d_effet);
-    // Calculer la date de fin en ajoutant la durée (en années)
     const dateFin = new Date(dateEffet);
-    dateFin.setFullYear(dateFin.getFullYear() + Number(duree)); // Ajouter la durée à la date d'effet
+    dateFin.setFullYear(dateFin.getFullYear() + Number(duree));
 
     const suiviBail = await SuiviBail.create({
       entite,
       type_de_bail,
       beneficiaire,
       district,
-      duree: Number(duree), // Assurez-vous que duree est un nombre
+      duree: Number(duree),
       date_d_effet: dateEffet,
-      scan: req.file.filename, // Enregistrez le nom de fichier
-      fin: dateFin // Date de fin calculée
+      scan: req.file.filename,
+      fin: dateFin
     });
 
     res.status(201).json({ message: 'Entrée de bail créée avec succès', suiviBail });
@@ -308,7 +283,6 @@ app.post('/api/suivi_bail', upload.single('scan'), async (req, res) => {
   }
 });
 
-// Lire toutes les bails
 app.get('/api/suivi_bail', async (req, res) => {
   try {
     const suiviBails = await SuiviBail.findAll();
@@ -319,7 +293,6 @@ app.get('/api/suivi_bail', async (req, res) => {
   }
 });
 
-// Lire une seule bail par ID
 app.get('/api/suivi_bail/:id', async (req, res) => {
   const { id } = req.params;
   try {
@@ -334,7 +307,6 @@ app.get('/api/suivi_bail/:id', async (req, res) => {
   }
 });
 
-// Mettre à jour bail par ID
 app.put('/api/suivi_bail/:id', upload.single('scan'), async (req, res) => {
   const { id } = req.params;
   const { entite, type_de_bail, beneficiaire, district, duree, date_d_effet } = req.body;
@@ -345,29 +317,25 @@ app.put('/api/suivi_bail/:id', upload.single('scan'), async (req, res) => {
       return res.status(404).json({ error: 'Entrée non trouvée' });
     }
 
-    // Convertir date_d_effet en objet Date
     const dateEffet = new Date(date_d_effet);
     if (isNaN(dateEffet)) {
       return res.status(400).json({ error: 'Date d\'effet invalide' });
     }
 
-    // Calculer la date de fin en ajoutant la durée (en années)
     const dateFin = new Date(dateEffet);
-    dateFin.setFullYear(dateFin.getFullYear() + Number(duree)); // Ajouter la durée à la date d'effet
+    dateFin.setFullYear(dateFin.getFullYear() + Number(duree));
 
-    // Debugging: Log if a new file is uploaded
     console.log('Fichier téléchargé:', req.file ? req.file.filename : 'Pas de fichier téléchargé');
 
-    // Mise à jour des champs
     await suiviBail.update({
       entite,
       type_de_bail,
       beneficiaire,
       district,
-      duree: Number(duree), // Assurez-vous que duree est un nombre
+      duree: Number(duree),
       date_d_effet: dateEffet,
-      scan: req.file ? req.file.filename : suiviBail.scan, // Mettre à jour le scan si un nouveau fichier est téléchargé
-      fin: dateFin // Date de fin calculée
+      scan: req.file ? req.file.filename : suiviBail.scan,
+      fin: dateFin
     });
 
     res.json({ message: 'Entrée de bail mise à jour avec succès', suiviBail });
@@ -377,7 +345,6 @@ app.put('/api/suivi_bail/:id', upload.single('scan'), async (req, res) => {
   }
 });
 
-// Supprimer bail par ID
 app.delete('/api/suivi_bail/:id', async (req, res) => {
   const { id } = req.params;
 
@@ -394,12 +361,10 @@ app.delete('/api/suivi_bail/:id', async (req, res) => {
   }
 });
 
-// Route pour servir le scan (PDF) d'un suivi de bail
 app.get('/api/suivi_bail/:id/scan', async (req, res) => {
   const { id } = req.params;
 
   try {
-    // Trouver l'entrée de suivi de bail par ID
     const suiviBail = await SuiviBail.findByPk(id);
     if (!suiviBail || !suiviBail.scan) {
       return res.status(404).json({ error: 'Entrée non trouvée ou aucun scan associé' });
@@ -407,13 +372,12 @@ app.get('/api/suivi_bail/:id/scan', async (req, res) => {
 
     const filePath = path.join(__dirname, 'uploads', suiviBail.scan);
     
-    // Vérifiez si le fichier existe avant de l'envoyer
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({ error: 'Fichier non trouvé' });
     }
 
-    res.setHeader('Content-Type', 'application/pdf'); // Définir le type de contenu
-    res.setHeader('Content-Disposition', `inline; filename="${path.basename(filePath)}"`); // Ouvrir dans le navigateur
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${path.basename(filePath)}"`);
     res.sendFile(filePath, (err) => {
       if (err) {
         console.error('Erreur lors de l\'envoi du fichier:', err);
@@ -425,11 +389,10 @@ app.get('/api/suivi_bail/:id/scan', async (req, res) => {
     res.status(500).json({ error: 'Erreur lors de la récupération du scan' });
   }
 });
-
-//servir pdf devis 
+ 
 app.get('/api/operations/:id/devis_pdf', async (req, res) => {
   const { id } = req.params;
-  console.log('ID reçu dans le backend:', id); // Ajoutez ceci pour vérifier l'ID
+  console.log('ID reçu dans le backend:', id);
 
   if (!id) {
     return res.status(400).json({ error: 'ID de l\'opération requis.' });
@@ -455,7 +418,30 @@ app.get('/api/operations/:id/devis_pdf', async (req, res) => {
   }
 });
 
-// Synchronisation des modèles avec la base de données
+// Endpoint pour uploader un fichier
+app.post('/upload', upload.single('file'), async (req, res) => {
+  try {
+    const file = req.file;
+
+    // Vérification de la présence du fichier
+    if (!file) {
+      return res.status(400).json({ message: 'Aucun fichier chargé.' });
+    }
+
+    // Enregistrement dans la base de données
+    const newFile = await File.create({
+      name: file.originalname, // Nom du fichier
+      data: file.buffer,       // Données binaires
+    });
+
+    res.status(201).json({ message: 'Fichier uploadé avec succès.', fileId: newFile.id });
+  } catch (error) {
+    console.error('Erreur lors de l\'upload du fichier :', error.message);
+    res.status(500).json({ error: 'Une erreur est survenue lors de l\'upload du fichier.' });
+  }
+})
+
+
 db.sync({ alter: true })
   .then(() => {
     console.log('Les modèles ont été synchronisés avec la base de données.');

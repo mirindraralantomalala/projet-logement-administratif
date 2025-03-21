@@ -1,8 +1,9 @@
 // Menu.tsx
 import React, { useState, useEffect } from 'react';
-import { Button, Box, Typography, Dialog, DialogContent, IconButton } from '@mui/material';
+import { Button, Box, Typography, Dialog, DialogContent, IconButton, Menu as MuiMenu, MenuItem } from '@mui/material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Close } from '@mui/icons-material'; // Icône pour fermer le modal
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import OperationsDisplay from './OperationsDisplay'; // Import de votre composant d'affichage des opérations
 import BailDisplay from './BailDisplay';
 import './InfoSection.css'; // Assurez-vous que ce fichier est correctement importé
@@ -46,6 +47,17 @@ const images = [
 const regions = ['Antsirabe I', 'Antsirabe II', 'Betafo', 'Ambatolampy', 'Antanifotsy', 'Faratsiho', 'Mandoto'];
 
 const Menu: React.FC = () => {
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const handleClick = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+  const handleMenuItemClick = (path: string) => {
+    setAnchorEl(null); // Ferme le menu
+    navigate(path); // Redirige vers la nouvelle page
+  };
   const navigate = useNavigate();
   const location = useLocation(); // Pour obtenir la route actuelle
   const [currentImage, setCurrentImage] = useState(images[0]); // Image actuelle
@@ -112,6 +124,39 @@ const Menu: React.FC = () => {
         >
           Accueil
         </Button>
+
+         {/* Bouton avec la petite flèche */}
+         <Button
+        variant="contained"
+        sx={{
+          minWidth: '40px', // Taille minimum pour un bouton carré
+          padding: 0, // Pas de padding pour ne garder que l'icône
+          borderRadius: '50%', // Forme circulaire
+          backgroundColor: '#F4A460',
+        }}
+        onClick={handleClick}
+      >
+        <ArrowDropDownIcon /> {/* Seulement l'icône */}
+      </Button>
+      <MuiMenu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleClose}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'left',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'left',
+        }}
+      >
+        <MenuItem onClick={() => handleMenuItemClick('/recensement')}>Recensement</MenuItem>
+        <MenuItem onClick={() => handleMenuItemClick('/attribution')}>Attribution</MenuItem>
+        <MenuItem onClick={() => handleMenuItemClick('/retrait')}>Retrait</MenuItem>
+        <MenuItem onClick={() => handleMenuItemClick('/bail')}>Bail</MenuItem>
+        <MenuItem onClick={() => handleMenuItemClick('/etatdeslieux')}>Etatdeslieux</MenuItem>
+      </MuiMenu>
 
         {/* Section des boutons des régions */}
         <Box

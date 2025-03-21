@@ -21,6 +21,6 @@
     "jsx": "react-jsx"
   },
   "include": [
-    "src"
+    "src", "jspdf-autotable.d.ts"
   ]
 }

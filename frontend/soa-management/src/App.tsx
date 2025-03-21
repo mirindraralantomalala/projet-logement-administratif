@@ -10,11 +10,17 @@ import Layout from './components/Layout'; // Importer le Layout
 import 'react-toastify/dist/ReactToastify.css';
 import { ToastContainer } from 'react-toastify'; // Importer toast et ToastContainer
 
+// Import des nouvelles pages
+import Recensement from './pages/Recensement';
+import Attribution from './pages/Attribution';
+import Retrait from './pages/Retrait';
+import Bail from './pages/Bail';
+import Etatdeslieux from './pages/Etatdeslieux';
+
 const SoaPageWrapper = () => {
   const { region } = useParams<{ region: string }>();
   return <SoaPage region={region!} />;
 };
-
 
 const App: React.FC = () => {
   const theme = createTheme({
@@ -46,7 +52,7 @@ const App: React.FC = () => {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <div className="app-wrapper"> 
+      <div className="app-wrapper">
         <Router>
           <Routes>
             {/* Route publique pour la connexion */}
@@ -88,19 +94,71 @@ const App: React.FC = () => {
               }
             />
 
+            {/* Nouvelles routes protégées */}
+            <Route
+              path="/recensement"
+              element={
+                <PrivateRoute>
+                  <Layout>
+                    <Recensement />
+                  </Layout>
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/attribution"
+              element={
+                <PrivateRoute>
+                  <Layout>
+                    <Attribution />
+                  </Layout>
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/retrait"
+              element={
+                <PrivateRoute>
+                  <Layout>
+                    <Retrait />
+                  </Layout>
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/bail"
+              element={
+                <PrivateRoute>
+                  <Layout>
+                    <Bail />
+                  </Layout>
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/etatdeslieux"
+              element={
+                <PrivateRoute>
+                  <Layout>
+                    <Etatdeslieux />
+                  </Layout>
+                </PrivateRoute>
+              }
+            />
+
             {/* Redirection par défaut vers la page de connexion */}
             <Route path="*" element={<Login />} />
           </Routes>
         </Router>
 
         {/* ToastContainer doit être au niveau de l'application */}
-        <ToastContainer 
-          position="top-right" 
-          autoClose={3000}  // Durée de la notification de 3 secondes
-          hideProgressBar={false} 
-          closeOnClick 
-          pauseOnHover 
-          draggable 
+        <ToastContainer
+          position="top-right"
+          autoClose={3000} // Durée de la notification de 3 secondes
+          hideProgressBar={false}
+          closeOnClick
+          pauseOnHover
+          draggable
           pauseOnFocusLoss
         />
       </div>
